@@ -1,8 +1,8 @@
 ---
 name: drama-video-generation
-description: Generate videos through a drama New API gateway. Use for Seedance 2.0/2.5, Drama Video V2, and 0826 video models; supports text-to-video, reference media, polling, and authenticated MP4 download.
+description: Generate videos through a user-configured New API gateway. Supports Seedance 2.0/2.5, Drama Video V2, 0826 models, references, polling, and MP4 download.
 metadata:
-  short-description: Generate videos with the drama New API gateway
+  short-description: New API video generation
 ---
 
 # Drama Video Generation

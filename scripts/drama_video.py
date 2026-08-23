@@ -29,16 +29,16 @@ def load_env():
 def config(args):
     base = (os.environ.get("DRAMA_BASE_URL") or "").rstrip("/")
     if not base:
-        raise SystemExit("DRAMA_BASE_URL is missing; set the user's gateway origin in .env or the environment")
+        raise SystemExit("DRAMA_BASE_URL is missing / 缺少 DRAMA_BASE_URL；请在 .env 或环境变量中填写用户网关根地址")
     token = os.environ.get("DRAMA_API_KEY")
     if not token:
-        raise SystemExit("DRAMA_API_KEY is missing; set it in .env or the environment")
+        raise SystemExit("DRAMA_API_KEY is missing / 缺少 DRAMA_API_KEY；请在 .env 或环境变量中填写用户 API 密钥")
     model = args.model or os.environ.get("DRAMA_MODEL", "seedance-2.0-fast")
     endpoint = args.endpoint or os.environ.get("DRAMA_ENDPOINT", "auto")
     if endpoint == "auto":
         endpoint = "generations" if "0826" in model else "videos"
     if endpoint not in {"videos", "generations"}:
-        raise SystemExit("DRAMA_ENDPOINT must be auto, videos, or generations")
+        raise SystemExit("DRAMA_ENDPOINT must be auto, videos, or generations / DRAMA_ENDPOINT 必须是 auto、videos 或 generations")
     return base, token, model, endpoint
 
 
@@ -60,12 +60,12 @@ def request_json(method, url, token, payload=None, timeout=60):
             detail = raw
         return exc.code, detail
     except urllib.error.URLError as exc:
-        raise SystemExit(f"network error: {exc}") from exc
+        raise SystemExit(f"network error / 网络错误: {exc}") from exc
 
 
 def check(status, payload):
     if status >= 400:
-        raise SystemExit(f"HTTP {status}: {json.dumps(payload, ensure_ascii=False)}")
+        raise SystemExit(f"HTTP {status} / HTTP 错误 {status}: {json.dumps(payload, ensure_ascii=False)}")
 
 
 def create_payload(args, model, endpoint):
@@ -93,7 +93,7 @@ def parse_reference(value):
     fields = dict(part.split("=", 1) for part in value.split(" ") if "=" in part)
     for required in ("type", "role", "source"):
         if not fields.get(required):
-            raise SystemExit(f"reference needs type= role= source=: {value}")
+            raise SystemExit(f"reference needs type= role= source= / 参考素材必须包含 type=、role=、source=: {value}")
     return {"type": fields["type"], "role": fields["role"], "source": fields["source"]}
 
 
@@ -104,7 +104,7 @@ def create(args):
     check(status, payload)
     task_id = payload.get("id") or payload.get("task_id")
     if not task_id:
-        raise SystemExit(f"create response has no task id: {payload}")
+        raise SystemExit(f"create response has no task id / 创建响应没有任务 ID: {payload}")
     print(json.dumps({"task_id": task_id, "model": model, "endpoint": endpoint}, ensure_ascii=False))
     return task_id
 
@@ -125,7 +125,7 @@ def poll(args, task_id=None):
                 raise SystemExit(1)
             return payload
         time.sleep(args.interval)
-    raise SystemExit(f"task timed out after {args.timeout}s: {task_id}")
+    raise SystemExit(f"task timed out after {args.timeout}s / 任务超时（{args.timeout} 秒）: {task_id}")
 
 
 def download(args):
@@ -146,7 +146,7 @@ def download(args):
         with urllib.request.urlopen(request, timeout=180) as response, open(args.out, "wb") as output:
             output.write(response.read())
     except urllib.error.HTTPError as exc:
-        raise SystemExit(f"download failed HTTP {exc.code}") from exc
+        raise SystemExit(f"download failed HTTP {exc.code} / 下载失败 HTTP {exc.code}") from exc
     print(args.out)
 
 
@@ -166,49 +166,49 @@ def models(args):
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", help="model id")
+    parser = argparse.ArgumentParser(description="Zero-dependency video CLI / 零依赖视频生成 CLI")
+    parser.add_argument("--model", help="model id / 模型 ID")
     parser.add_argument("--endpoint", choices=["auto", "videos", "generations"])
     sub = parser.add_subparsers(dest="command", required=True)
 
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--model")
     common.add_argument("--endpoint", choices=["auto", "videos", "generations"])
-    common.add_argument("--prompt", required=True)
-    common.add_argument("--seconds", type=int, default=4)
-    common.add_argument("--resolution", default="480p")
-    common.add_argument("--aspect-ratio", default="16:9")
-    common.add_argument("--generate-audio", action="store_true")
-    common.add_argument("--negative-prompt")
-    common.add_argument("--seed", type=int)
-    common.add_argument("--reference", dest="references", action="append", help="type=image role=reference source=https://...")
+    common.add_argument("--prompt", required=True, help="video prompt / 视频提示词")
+    common.add_argument("--seconds", type=int, default=4, help="duration in seconds / 时长（秒）")
+    common.add_argument("--resolution", default="480p", help="resolution / 分辨率")
+    common.add_argument("--aspect-ratio", default="16:9", help="aspect ratio / 画面比例")
+    common.add_argument("--generate-audio", action="store_true", help="request audio / 请求生成音频")
+    common.add_argument("--negative-prompt", help="negative prompt / 负面提示词")
+    common.add_argument("--seed", type=int, help="random seed / 随机种子")
+    common.add_argument("--reference", dest="references", action="append", help="type=image role=reference source=https://... / 参考素材")
 
-    create_parser = sub.add_parser("create", parents=[common])
+    create_parser = sub.add_parser("create", parents=[common], help="create a task / 创建任务")
     create_parser.set_defaults(func=create)
-    generate_parser = sub.add_parser("generate", parents=[common])
-    generate_parser.add_argument("--out", default="output.mp4")
-    generate_parser.add_argument("--interval", type=int, default=4)
-    generate_parser.add_argument("--timeout", type=int, default=900)
+    generate_parser = sub.add_parser("generate", parents=[common], help="create, poll, and download / 创建、轮询并下载")
+    generate_parser.add_argument("--out", default="output.mp4", help="output MP4 path / 输出 MP4 路径")
+    generate_parser.add_argument("--interval", type=int, default=4, help="poll interval / 轮询间隔")
+    generate_parser.add_argument("--timeout", type=int, default=900, help="timeout in seconds / 超时秒数")
     generate_parser.set_defaults(func=generate)
 
-    wait_parser = sub.add_parser("wait")
-    wait_parser.add_argument("--task-id", required=True)
+    wait_parser = sub.add_parser("wait", help="poll a task / 轮询任务")
+    wait_parser.add_argument("--task-id", required=True, help="task ID / 任务 ID")
     wait_parser.add_argument("--model")
     wait_parser.add_argument("--endpoint", choices=["auto", "videos", "generations"])
     wait_parser.add_argument("--interval", type=int, default=4)
     wait_parser.add_argument("--timeout", type=int, default=900)
     wait_parser.set_defaults(func=poll)
 
-    download_parser = sub.add_parser("download")
-    download_parser.add_argument("--task-id", required=True)
+    download_parser = sub.add_parser("download", help="download a completed task / 下载已完成任务")
+    download_parser.add_argument("--task-id", required=True, help="task ID / 任务 ID")
     download_parser.add_argument("--model")
     download_parser.add_argument("--endpoint", choices=["auto", "videos", "generations"])
-    download_parser.add_argument("--out", default="output.mp4")
+    download_parser.add_argument("--out", default="output.mp4", help="output MP4 path / 输出 MP4 路径")
     download_parser.add_argument("--wait", action="store_true")
     download_parser.add_argument("--interval", type=int, default=4)
     download_parser.add_argument("--timeout", type=int, default=900)
     download_parser.set_defaults(func=download)
-    models_parser = sub.add_parser("models")
+    models_parser = sub.add_parser("models", help="list available models / 列出可用模型")
     models_parser.add_argument("--model")
     models_parser.add_argument("--endpoint", choices=["auto", "videos", "generations"])
     models_parser.set_defaults(func=models)

@@ -1,4 +1,4 @@
 interface:
-  display_name: Drama Video Generation
-  short_description: Generate videos through the drama New API gateway
-  default_prompt: Generate a video with the configured drama gateway using the user's prompt, requested duration, resolution, aspect ratio, and references.
+  display_name: Video Generation / 视频生成
+  short_description: Generate videos through a configured New API gateway / 通过配置的 New API 网关生成视频
+  default_prompt: Generate a video with the configured gateway using the user's prompt, duration, resolution, aspect ratio, and references. / 使用已配置的网关，根据用户提示词、时长、分辨率、比例和参考素材生成视频。
