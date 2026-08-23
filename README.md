@@ -1,4 +1,4 @@
-# drama-video-generation
+# seedance-agent-skill
 
 Codex skill and zero-dependency Python CLI for a New API compatible video gateway.
 
