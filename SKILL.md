@@ -9,6 +9,8 @@ metadata:
 
 Use the bundled zero-dependency CLI for video generation. It reads `DRAMA_BASE_URL`, `DRAMA_API_KEY`, `DRAMA_MODEL`, and `DRAMA_ENDPOINT` from `.env` in the skill directory or the process environment.
 
+Set `DRAMA_LANG=en` or `DRAMA_LANG=zh` for the default CLI language. A per-run `--lang en` or `--lang zh` flag overrides the environment setting; each run uses one language only.
+
 ## Quick Start
 
 ```powershell
