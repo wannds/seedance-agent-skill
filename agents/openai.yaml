@@ -1,0 +1,4 @@
+interface:
+  display_name: Drama Video Generation
+  short_description: Generate videos through the drama New API gateway
+  default_prompt: Generate a video with the configured drama gateway using the user's prompt, requested duration, resolution, aspect ratio, and references.
