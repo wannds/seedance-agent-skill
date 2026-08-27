@@ -9,7 +9,7 @@ A Codex skill for generating videos through a user-configured New API-compatible
 
 ## Features
 
-- Supports Seedance 2.0, Seedance 2.5, Drama Video V2, and 0826 model families.
+- Supports Seedance 2.0 only with `-0826` model ids, plus Seedance 2.5 and Drama Video V2.
 - Supports text-to-video, image/video/audio references, task polling, and MP4 downloads.
 - Selects `/v1/videos` or `/v1/video/generations` automatically, with a manual override.
 - CLI output is available in Chinese or English; each run uses one language only.
@@ -19,7 +19,7 @@ A Codex skill for generating videos through a user-configured New API-compatible
 Give Codex this prompt:
 
 ```text
-Install the Codex skill from https://github.com/wannds/seedance-agent-skill. Clone the repository, copy its contents into the local skills directory as drama-video-generation, and copy .env.example to .env. If configuration is not supplied, ask me for DRAMA_BASE_URL, DRAMA_API_KEY, and DRAMA_MODEL. The user supplies the gateway, model, and API key; do not insert provider defaults. Keep the API key only in .env and never commit it. Run python scripts/drama_video.py --lang en --help to validate the installation and confirm the installed path.
+Install the Codex skill from https://github.com/wannds/seedance-agent-skill. Clone the repository, copy its contents into the local skills directory as drama-video-generation, and copy .env.example to .env. If configuration is not supplied, ask me for DRAMA_BASE_URL, DRAMA_API_KEY, and DRAMA_MODEL. The user supplies the gateway, model, and API key; do not insert provider defaults. Seedance 2.0 permits only model ids ending in -0826; reject every other Seedance 2.0 model. Keep the API key only in .env and never commit it. Run python scripts/drama_video.py --lang en --help to validate the installation and confirm the installed path.
 ```
 
 The built-in installer helper can also install the repository:
@@ -43,12 +43,12 @@ Then edit `.env`:
 ```env
 DRAMA_BASE_URL=YOUR_GATEWAY_ORIGIN
 DRAMA_API_KEY=YOUR_API_KEY
-DRAMA_MODEL=seedance-2.0-fast
+DRAMA_MODEL=seedance-2.0-fast-0826
 DRAMA_ENDPOINT=auto
 DRAMA_LANG=en
 ```
 
-Set `DRAMA_BASE_URL` to the gateway origin without `/v1`; the CLI selects the route from the model. With `DRAMA_ENDPOINT=auto`, `*-0826` models use the generations endpoint and other models use the videos endpoint. `.env` is ignored by Git; never commit credentials.
+Set `DRAMA_BASE_URL` to the gateway origin without `/v1`; the CLI selects the route from the model. Seedance 2.0 permits only ids such as `seedance-2.0-0826` and `seedance-2.0-fast-0826` that end in `-0826`, and always uses the generations endpoint. Other supported families such as Seedance 2.5 use the videos endpoint. `.env` is ignored by Git; never commit credentials.
 
 ## Language Selection
 
@@ -72,7 +72,7 @@ The command-line `--lang en` or `--lang zh` flag overrides the `.env` default.
 ```powershell
 python scripts/drama_video.py --lang en generate `
   --prompt "A cinematic black hole with a glowing accretion disk, slow camera push-in" `
-  --model seedance-2.0-fast `
+  --model seedance-2.0-fast-0826 `
   --seconds 4 `
   --resolution 480p `
   --aspect-ratio 16:9 `
@@ -93,10 +93,10 @@ python scripts/drama_video.py --lang en download --task-id TASK_ID --out result.
 
 ## Endpoints And Duration Constraints
 
-- Standard Seedance 2.0/2.5 and Drama Video V2 use `POST /v1/videos`.
-- `seedance-2.0-0826` and `seedance-2.0-fast-0826` use `POST /v1/video/generations`.
-- Seedance 2.0 usually accepts 4-15 seconds; Seedance 2.5 usually accepts 4-30 seconds, with resolutions determined by the gateway.
-- 0826 models usually accept 4-15 seconds; fast variants support up to 720p.
+- Seedance 2.0 permits only ids such as `seedance-2.0-0826` and `seedance-2.0-fast-0826` that end in `-0826`; they use `POST /v1/video/generations`.
+- The CLI rejects `seedance-2.0`, `seedance-2.0-fast`, and any other Seedance 2.0 id without the `-0826` suffix. The `models` command hides them as well.
+- Other supported families such as Seedance 2.5 and Drama Video V2 use `POST /v1/videos`.
+- Seedance 2.0 `*-0826` models usually accept 4-15 seconds; fast variants support up to 720p. Seedance 2.5 usually accepts 4-30 seconds, with resolutions determined by the gateway.
 - For an exact 3-second file, generate the provider minimum first, then trim locally with FFmpeg.
 
 ## Reference Media

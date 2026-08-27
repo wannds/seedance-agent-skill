@@ -9,7 +9,7 @@
 
 ## 功能
 
-- 支持 Seedance 2.0、Seedance 2.5、Drama Video V2 和 0826 系列模型。
+- Seedance 2.0 仅支持以 `-0826` 结尾的模型，同时支持 Seedance 2.5 和 Drama Video V2。
 - 支持文生视频、参考图片/视频/音频、任务轮询和 MP4 下载。
 - 自动识别 `/v1/videos` 与 `/v1/video/generations` 接口，也可以手动指定。
 - CLI 输出支持中文和英文，每次运行只显示一种语言。
@@ -19,7 +19,7 @@
 把下面的提示词发给 Codex：
 
 ```text
-从 https://github.com/wannds/seedance-agent-skill 安装 Codex skill。克隆仓库，将仓库内容复制到本地 skills 目录的 drama-video-generation 文件夹，将 .env.example 复制为 .env；如果未提供配置，询问我 DRAMA_BASE_URL、DRAMA_API_KEY 和 DRAMA_MODEL。网关地址、模型和 API 密钥由用户自行填写，不要写入任何厂商默认值。API 密钥只能保存在 .env，绝不要提交。运行 python scripts/drama_video.py --lang zh --help 验证安装，并确认安装路径。
+从 https://github.com/wannds/seedance-agent-skill 安装 Codex skill。克隆仓库，将仓库内容复制到本地 skills 目录的 drama-video-generation 文件夹，将 .env.example 复制为 .env；如果未提供配置，询问我 DRAMA_BASE_URL、DRAMA_API_KEY 和 DRAMA_MODEL。网关地址、模型和 API 密钥由用户自行填写，不要写入任何厂商默认值。Seedance 2.0 只允许使用以 -0826 结尾的模型 ID，禁止使用其他 Seedance 2.0 型号。API 密钥只能保存在 .env，绝不要提交。运行 python scripts/drama_video.py --lang zh --help 验证安装，并确认安装路径。
 ```
 
 也可以使用 Codex 内置安装脚本：
@@ -43,12 +43,12 @@ Copy-Item .env.example .env
 ```env
 DRAMA_BASE_URL=你的网关根地址
 DRAMA_API_KEY=你的API密钥
-DRAMA_MODEL=seedance-2.0-fast
+DRAMA_MODEL=seedance-2.0-fast-0826
 DRAMA_ENDPOINT=auto
 DRAMA_LANG=zh
 ```
 
-`DRAMA_BASE_URL` 填网关根地址，不要带 `/v1`；CLI 会根据模型自动选择接口。`DRAMA_ENDPOINT=auto` 会为 `*-0826` 模型使用 generations 接口，其他模型使用 videos 接口。`.env` 已加入 `.gitignore`，不要提交密钥。
+`DRAMA_BASE_URL` 填网关根地址，不要带 `/v1`；CLI 会根据模型自动选择接口。Seedance 2.0 仅允许 `seedance-2.0-0826` 和 `seedance-2.0-fast-0826` 这类以 `-0826` 结尾的模型，并强制使用 generations 接口；Seedance 2.5 等其他支持的模型使用 videos 接口。`.env` 已加入 `.gitignore`，不要提交密钥。
 
 ## 语言切换
 
@@ -72,7 +72,7 @@ DRAMA_LANG=zh
 ```powershell
 python scripts/drama_video.py --lang zh generate `
   --prompt "电影级科幻风格的黑洞，发光吸积盘，镜头缓慢推进" `
-  --model seedance-2.0-fast `
+  --model seedance-2.0-fast-0826 `
   --seconds 4 `
   --resolution 480p `
   --aspect-ratio 16:9 `
@@ -93,10 +93,10 @@ python scripts/drama_video.py --lang zh download --task-id TASK_ID --out result.
 
 ## 接口和时长约束
 
-- 普通 Seedance 2.0/2.5、Drama Video V2 使用 `POST /v1/videos`。
-- `seedance-2.0-0826` 和 `seedance-2.0-fast-0826` 使用 `POST /v1/video/generations`。
-- Seedance 2.0 通常支持 4-15 秒；Seedance 2.5 通常支持 4-30 秒，分辨率以网关返回为准。
-- 0826 系列通常支持 4-15 秒，fast 版本最高 720p。
+- Seedance 2.0 只允许 `seedance-2.0-0826` 和 `seedance-2.0-fast-0826` 等以 `-0826` 结尾的 ID，并使用 `POST /v1/video/generations`。
+- `seedance-2.0`、`seedance-2.0-fast` 及其他不带 `-0826` 后缀的 Seedance 2.0 型号会被 CLI 拒绝，`models` 命令也不会显示它们。
+- Seedance 2.5、Drama Video V2 等其他支持的模型使用 `POST /v1/videos`。
+- Seedance 2.0 `*-0826` 通常支持 4-15 秒，fast 版本最高 720p；Seedance 2.5 通常支持 4-30 秒，分辨率以网关返回为准。
 - 如果需要精确 3 秒，先生成供应商允许的最短时长，再使用 FFmpeg 本地裁剪。
 
 ## 参考素材

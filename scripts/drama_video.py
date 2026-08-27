@@ -12,6 +12,7 @@ import urllib.request
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LANG = "en"
+DEFAULT_MODEL = "seedance-2.0-fast-0826"
 
 
 def text(en, zh):
@@ -41,6 +42,30 @@ def load_env():
             os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
 
 
+def is_seedance_20(model):
+    normalized = model.strip().lower().replace("-", "")
+    return normalized.startswith("seedance2.0")
+
+
+def validate_model(model, endpoint="auto"):
+    if not is_seedance_20(model):
+        return
+    if not model.strip().lower().endswith("-0826"):
+        raise SystemExit(text(
+            f"Seedance 2.0 model is disabled unless its id ends with -0826: {model}",
+            f"Seedance 2.0 模型必须使用以 -0826 结尾的 ID，已禁止：{model}",
+        ))
+    if endpoint == "videos":
+        raise SystemExit(text(
+            "Seedance 2.0 *-0826 models require the generations endpoint",
+            "Seedance 2.0 的 *-0826 模型必须使用 generations 接口",
+        ))
+
+
+def model_is_allowed(model):
+    return not is_seedance_20(model) or model.strip().lower().endswith("-0826")
+
+
 def config(args):
     base = (os.environ.get("DRAMA_BASE_URL") or "").rstrip("/")
     if not base:
@@ -48,10 +73,11 @@ def config(args):
     token = os.environ.get("DRAMA_API_KEY")
     if not token:
         raise SystemExit(text("DRAMA_API_KEY is missing; set it in .env or the environment", "缺少 DRAMA_API_KEY；请在 .env 或环境变量中填写用户 API 密钥"))
-    model = args.model or os.environ.get("DRAMA_MODEL", "seedance-2.0-fast")
+    model = args.model or os.environ.get("DRAMA_MODEL", DEFAULT_MODEL)
     endpoint = args.endpoint or os.environ.get("DRAMA_ENDPOINT", "auto")
+    validate_model(model, endpoint)
     if endpoint == "auto":
-        endpoint = "generations" if "0826" in model else "videos"
+        endpoint = "generations" if is_seedance_20(model) else "videos"
     if endpoint not in {"videos", "generations"}:
         raise SystemExit(text("DRAMA_ENDPOINT must be auto, videos, or generations", "DRAMA_ENDPOINT 必须是 auto、videos 或 generations"))
     return base, token, model, endpoint
@@ -177,7 +203,9 @@ def models(args):
     status, payload = request_json("GET", base + "/v1/models", token)
     check(status, payload)
     for item in payload.get("data", []):
-        print(item.get("id", item))
+        model = item.get("id", item) if isinstance(item, dict) else item
+        if isinstance(model, str) and model_is_allowed(model):
+            print(model)
 
 
 def build_parser():
