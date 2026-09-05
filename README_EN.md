@@ -9,9 +9,9 @@ A Codex skill for generating videos through a user-configured New API-compatible
 
 ## Features
 
-- Supports Seedance models only, including A-series Seedance 2.0/2.5 and legacy `*-0826` models.
+- Supports A-series Seedance 2.0/2.5 models only; model ids containing `0826` are excluded.
 - Supports text-to-video, image/video/audio references, task polling, and MP4 downloads.
-- Sends JSON to `/v1/videos` for A-series models and JSON to `/v1/video/generations` for legacy `*-0826` models, with a manual override.
+- Sends JSON to `/v1/videos` for all supported A-series models.
 - CLI output is available in Chinese or English; each run uses one language only.
 
 ## Install In Codex
@@ -19,7 +19,7 @@ A Codex skill for generating videos through a user-configured New API-compatible
 Give Codex this prompt:
 
 ```text
-Install the Codex skill from https://github.com/wannds/seedance-agent-skill. Clone the repository, copy its contents into the local skills directory as drama-video-generation, and copy .env.example to .env. If configuration is not supplied, ask me for DRAMA_BASE_URL, DRAMA_API_KEY, and DRAMA_MODEL. Use only Seedance model ids returned by GET /v1/models; A-series models use /v1/videos, while seedance-2.0-0826 and seedance-2.0-fast-0826 use /v1/video/generations. The user supplies the gateway, model, and API key; do not insert provider defaults. Keep the API key only in .env and never commit it. Run python scripts/drama_video.py --lang en --help to validate the installation and confirm the installed path.
+Install the Codex skill from https://github.com/wannds/seedance-agent-skill. Clone the repository, copy its contents into the local skills directory as drama-video-generation, and copy .env.example to .env. If configuration is not supplied, ask me for DRAMA_BASE_URL, DRAMA_API_KEY, and DRAMA_MODEL. Use only Seedance A-series model ids returned by GET /v1/models that do not contain `0826`; all supported models use `/v1/videos`. The user supplies the gateway, model, and API key; do not insert provider defaults. Keep the API key only in .env and never commit it. Run python scripts/drama_video.py --lang en --help to validate the installation and confirm the installed path.
 ```
 
 The built-in installer helper can also install the repository:
@@ -44,11 +44,10 @@ Then edit `.env`:
 DRAMA_BASE_URL=YOUR_GATEWAY_ORIGIN
 DRAMA_API_KEY=YOUR_API_KEY
 DRAMA_MODEL=seedance2.5-A
-DRAMA_ENDPOINT=auto
 DRAMA_LANG=en
 ```
 
-Set `DRAMA_BASE_URL` to the gateway origin without `/v1`; the CLI selects the route from the model. This gateway's A-series models such as `seedance2.0-A` and `seedance2.5-A` use `/v1/videos`; legacy `seedance-2.0-0826` and `seedance-2.0-fast-0826` use the generations endpoint. `.env` is ignored by Git; never commit credentials.
+Set `DRAMA_BASE_URL` to the gateway origin without `/v1`; all supported A-series models use `/v1/videos`. Model ids containing `0826` are automatically excluded. `.env` is ignored by Git; never commit credentials.
 
 ## Language Selection
 
@@ -93,7 +92,6 @@ python scripts/drama_video.py --lang en download --task-id TASK_ID --out result.
 ## Endpoints And Duration Constraints
 
 - This gateway's `seedance2.0-A`, `seedance2.0-fast-A`, and `seedance2.5-A` models use JSON `POST /v1/videos`.
-- Legacy `seedance-2.0-0826` and `seedance-2.0-fast-0826` use JSON `POST /v1/video/generations`.
 - Seedance 2.0 usually accepts 4-15 seconds; Seedance 2.5 usually accepts 4-30 seconds, with resolutions determined by the gateway.
 - For an exact 3-second file, generate the provider minimum first, then trim locally with FFmpeg.
 

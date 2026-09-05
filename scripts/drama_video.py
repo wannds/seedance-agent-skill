@@ -43,31 +43,16 @@ def load_env():
 
 
 def is_seedance_model(model):
-    """Return True when the gateway model id belongs to the Seedance family."""
-    return model.strip().lower().startswith("seedance")
-
-
-def is_legacy_seedance_20(model):
-    """Return True for the documented legacy Seedance 2.0 -0826 route."""
+    """Return True for a Seedance model that is not an excluded -0826 id."""
     normalized = model.strip().lower()
-    return normalized in {"seedance-2.0-0826", "seedance-2.0-fast-0826"}
+    return normalized.startswith("seedance") and "0826" not in normalized
 
 
-def validate_model(model, endpoint="auto"):
+def validate_model(model):
     if not is_seedance_model(model):
         raise SystemExit(text(
-            f"Only Seedance models are supported: {model}",
-            f"当前 skill 只支持 Seedance 模型：{model}",
-        ))
-    if is_legacy_seedance_20(model) and endpoint == "videos":
-        raise SystemExit(text(
-            "Seedance 2.0 *-0826 models require the generations endpoint",
-            "Seedance 2.0 的 *-0826 模型必须使用 generations 接口",
-        ))
-    if not is_legacy_seedance_20(model) and endpoint == "generations":
-        raise SystemExit(text(
-            "A-series Seedance models require the videos endpoint",
-            "A 系列 Seedance 模型必须使用 videos 接口",
+            f"Only non-0826 Seedance models are supported: {model}",
+            f"当前 skill 只支持不含 0826 的 Seedance 模型：{model}",
         ))
 
 
@@ -83,13 +68,8 @@ def config(args):
     if not token:
         raise SystemExit(text("DRAMA_API_KEY is missing; set it in .env or the environment", "缺少 DRAMA_API_KEY；请在 .env 或环境变量中填写用户 API 密钥"))
     model = args.model or os.environ.get("DRAMA_MODEL", DEFAULT_MODEL)
-    endpoint = args.endpoint or os.environ.get("DRAMA_ENDPOINT", "auto")
-    validate_model(model, endpoint)
-    if endpoint == "auto":
-        endpoint = "generations" if is_legacy_seedance_20(model) else "videos"
-    if endpoint not in {"videos", "generations"}:
-        raise SystemExit(text("DRAMA_ENDPOINT must be auto, videos, or generations", "DRAMA_ENDPOINT 必须是 auto、videos 或 generations"))
-    return base, token, model, endpoint
+    validate_model(model)
+    return base, token, model
 
 
 def request_json(method, url, token, payload=None, timeout=60):
@@ -118,41 +98,16 @@ def check(status, payload):
         raise SystemExit(text(f"HTTP {status}: {json.dumps(payload, ensure_ascii=False)}", f"HTTP 错误 {status}：{json.dumps(payload, ensure_ascii=False)}"))
 
 
-def create_payload(args, model, endpoint):
-    if endpoint == "videos":
-        unsupported = []
-        if args.generate_audio:
-            unsupported.append("--generate-audio")
-        if args.seed is not None:
-            unsupported.append("--seed")
-        if args.negative_prompt:
-            unsupported.append("--negative-prompt")
-        if unsupported:
-            raise SystemExit(text(
-                "A-series Seedance does not support: " + ", ".join(unsupported),
-                "A 系列 Seedance 不支持参数：" + "、".join(unsupported),
-            ))
+def create_payload(args, model):
     payload = {
         "model": model,
         "prompt": args.prompt,
-        # The A-series contract accepts integer or string; string also works with
-        # gateways that validate form-compatible values strictly.
-        "seconds": str(args.seconds) if endpoint == "videos" else args.seconds,
+        "seconds": str(args.seconds),
         "resolution": args.resolution,
         "aspect_ratio": args.aspect_ratio,
     }
     if args.references:
         payload["references"] = [parse_reference(value) for value in args.references]
-    # These fields are documented for the legacy -0826 contract. The A-series
-    # endpoint accepts only its public Seedance fields listed above.
-    if endpoint == "generations":
-        payload["task_mode"] = "references" if args.references else "text"
-        if args.generate_audio:
-            payload["generate_audio"] = True
-        if args.seed is not None:
-            payload["seed"] = args.seed
-        if args.negative_prompt:
-            payload["negative_prompt"] = args.negative_prompt
     return payload
 
 
@@ -165,21 +120,20 @@ def parse_reference(value):
 
 
 def create(args):
-    base, token, model, endpoint = config(args)
-    path = "/v1/video/generations" if endpoint == "generations" else "/v1/videos"
-    status, payload = request_json("POST", base + path, token, create_payload(args, model, endpoint))
+    base, token, model = config(args)
+    status, payload = request_json("POST", base + "/v1/videos", token, create_payload(args, model))
     check(status, payload)
     task_id = payload.get("id") or payload.get("task_id")
     if not task_id:
         raise SystemExit(text(f"create response has no task id: {payload}", f"创建响应没有任务 ID：{payload}"))
-    print(json.dumps({"task_id": task_id, "model": model, "endpoint": endpoint}, ensure_ascii=False))
+    print(json.dumps({"task_id": task_id, "model": model, "endpoint": "videos"}, ensure_ascii=False))
     return task_id
 
 
 def poll(args, task_id=None):
-    base, token, model, endpoint = config(args)
+    base, token, model = config(args)
     task_id = task_id or args.task_id
-    path = f"/v1/video/generations/{urllib.parse.quote(task_id)}" if endpoint == "generations" else f"/v1/videos/{urllib.parse.quote(task_id)}"
+    path = f"/v1/videos/{urllib.parse.quote(task_id)}"
     deadline = time.time() + args.timeout
     while time.time() < deadline:
         status, payload = request_json("GET", base + path, token)
@@ -196,7 +150,7 @@ def poll(args, task_id=None):
 
 
 def download(args):
-    base, token, model, endpoint = config(args)
+    base, token, model = config(args)
     result = poll(args) if args.wait else None
     # New API proxies completed media through this endpoint. Do not depend on
     # an upstream metadata URL, which may be private or short-lived.
@@ -219,7 +173,7 @@ def generate(args):
 
 
 def models(args):
-    base, token, _, _ = config(args)
+    base, token, _ = config(args)
     status, payload = request_json("GET", base + "/v1/models", token)
     check(status, payload)
     for item in payload.get("data", []):
@@ -231,21 +185,16 @@ def models(args):
 def build_parser():
     parser = argparse.ArgumentParser(description=text("Zero-dependency video CLI", "零依赖视频生成 CLI"))
     parser.add_argument("--model", help=text("model id", "模型 ID"))
-    parser.add_argument("--endpoint", choices=["auto", "videos", "generations"], help=text("API endpoint mode", "API 端点模式"))
     parser.add_argument("--lang", choices=["en", "zh"], default=LANG, help=text("output language", "输出语言"))
     sub = parser.add_subparsers(dest="command", required=True)
 
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--model")
-    common.add_argument("--endpoint", choices=["auto", "videos", "generations"])
     common.add_argument("--lang", choices=["en", "zh"], default=argparse.SUPPRESS, help=text("output language", "输出语言"))
     common.add_argument("--prompt", required=True, help=text("video prompt", "视频提示词"))
     common.add_argument("--seconds", type=int, default=4, help=text("duration in seconds", "时长（秒）"))
     common.add_argument("--resolution", default="480p", help=text("resolution", "分辨率"))
     common.add_argument("--aspect-ratio", default="16:9", help=text("aspect ratio", "画面比例"))
-    common.add_argument("--generate-audio", action="store_true", help=text("request audio", "请求生成音频"))
-    common.add_argument("--negative-prompt", help=text("negative prompt", "负面提示词"))
-    common.add_argument("--seed", type=int, help=text("random seed", "随机种子"))
     common.add_argument("--reference", dest="references", action="append", help=text("type=image role=reference source=https://...", "type=image role=reference source=https://..."))
 
     create_parser = sub.add_parser("create", parents=[common], help=text("create a task", "创建任务"))
@@ -259,7 +208,6 @@ def build_parser():
     wait_parser = sub.add_parser("wait", help=text("poll a task", "轮询任务"))
     wait_parser.add_argument("--task-id", required=True, help=text("task ID", "任务 ID"))
     wait_parser.add_argument("--model")
-    wait_parser.add_argument("--endpoint", choices=["auto", "videos", "generations"])
     wait_parser.add_argument("--lang", choices=["en", "zh"], default=argparse.SUPPRESS, help=text("output language", "输出语言"))
     wait_parser.add_argument("--interval", type=int, default=4)
     wait_parser.add_argument("--timeout", type=int, default=900)
@@ -268,7 +216,6 @@ def build_parser():
     download_parser = sub.add_parser("download", help=text("download a completed task", "下载已完成任务"))
     download_parser.add_argument("--task-id", required=True, help=text("task ID", "任务 ID"))
     download_parser.add_argument("--model")
-    download_parser.add_argument("--endpoint", choices=["auto", "videos", "generations"])
     download_parser.add_argument("--lang", choices=["en", "zh"], default=argparse.SUPPRESS, help=text("output language", "输出语言"))
     download_parser.add_argument("--out", default="output.mp4", help=text("output MP4 path", "输出 MP4 路径"))
     download_parser.add_argument("--wait", action="store_true")
@@ -277,7 +224,6 @@ def build_parser():
     download_parser.set_defaults(func=download)
     models_parser = sub.add_parser("models", help=text("list available models", "列出可用模型"))
     models_parser.add_argument("--model")
-    models_parser.add_argument("--endpoint", choices=["auto", "videos", "generations"])
     models_parser.add_argument("--lang", choices=["en", "zh"], default=argparse.SUPPRESS, help=text("output language", "输出语言"))
     models_parser.set_defaults(func=models)
     return parser
