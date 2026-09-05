@@ -9,7 +9,7 @@
 
 ## 功能
 
-- 仅支持网关的 Seedance A 系列模型，包括 Seedance 2.0/2.5；自动排除 `0826` 模型。
+- 仅支持网关的 Seedance A 系列模型，包括 Seedance 2.0/2.5。
 - 支持文生视频、参考图片/视频/音频、任务轮询和 MP4 下载。
 - A 系列统一使用 JSON `/v1/videos`。
 - CLI 输出支持中文和英文，每次运行只显示一种语言。
@@ -19,7 +19,7 @@
 把下面的提示词发给 Codex：
 
 ```text
-从 https://github.com/wannds/seedance-agent-skill 安装 Codex skill。克隆仓库，将仓库内容复制到本地 skills 目录的 drama-video-generation 文件夹，将 .env.example 复制为 .env；如果未提供配置，询问我 DRAMA_BASE_URL、DRAMA_API_KEY 和 DRAMA_MODEL。只使用 GET /v1/models 返回的、不含 0826 的 Seedance A 系列模型 ID，并统一调用 JSON /v1/videos。网关地址、模型和 API 密钥由用户自行填写，不要写入任何厂商默认值。API 密钥只能保存在 .env，绝不要提交。运行 python scripts/drama_video.py --lang zh --help 验证安装，并确认安装路径。
+从 https://github.com/wannds/seedance-agent-skill 安装 Codex skill。克隆仓库，将仓库内容复制到本地 skills 目录的 drama-video-generation 文件夹，将 .env.example 复制为 .env；如果未提供配置，询问我 DRAMA_BASE_URL、DRAMA_API_KEY 和 DRAMA_MODEL。只使用 GET /v1/models 返回的 Seedance A 系列模型 ID，并统一调用 JSON /v1/videos。网关地址、模型和 API 密钥由用户自行填写，不要写入任何厂商默认值。API 密钥只能保存在 .env，绝不要提交。运行 python scripts/drama_video.py --lang zh --help 验证安装，并确认安装路径。
 ```
 
 也可以使用 Codex 内置安装脚本：
@@ -47,7 +47,7 @@ DRAMA_MODEL=seedance2.5-A
 DRAMA_LANG=zh
 ```
 
-`DRAMA_BASE_URL` 填网关根地址，不要带 `/v1`；A 系列 Seedance 模型统一使用 `/v1/videos`。模型 ID 中含 `0826` 的旧模型会被自动排除。`.env` 已加入 `.gitignore`，不要提交密钥。
+`DRAMA_BASE_URL` 填网关根地址，不要带 `/v1`；A 系列 Seedance 模型统一使用 `/v1/videos`。`.env` 已加入 `.gitignore`，不要提交密钥。
 
 ## 语言切换
 

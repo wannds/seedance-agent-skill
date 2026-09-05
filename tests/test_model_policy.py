@@ -40,14 +40,14 @@ class ModelPolicyTests(unittest.TestCase):
             with self.subTest(model=model):
                 self.assertEqual(self.config(model)[2], model)
 
-    def test_0826_models_are_rejected(self):
-        for model in ("seedance-2.0-0826", "seedance-2.0-fast-0826"):
+    def test_non_a_series_models_are_rejected(self):
+        for model in ("seedance2.0", "seedance2.0-fast"):
             with self.subTest(model=model):
                 with self.assertRaises(SystemExit):
                     self.config(model)
 
     def test_only_seedance_models_are_allowed(self):
-        for model in ("seedance2.5", "seedance2.0-A", "seedance2.0-fast-A"):
+        for model in ("seedance2.0-A", "seedance2.0-fast-A", "seedance2.5-A"):
             with self.subTest(model=model):
                 self.assertTrue(drama_video.model_is_allowed(model))
         for model in ("Drama-video-v2", "minimax-h3", "gpt-image-2"):

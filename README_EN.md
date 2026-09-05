@@ -9,7 +9,7 @@ A Codex skill for generating videos through a user-configured New API-compatible
 
 ## Features
 
-- Supports A-series Seedance 2.0/2.5 models only; model ids containing `0826` are excluded.
+- Supports A-series Seedance 2.0/2.5 models only.
 - Supports text-to-video, image/video/audio references, task polling, and MP4 downloads.
 - Sends JSON to `/v1/videos` for all supported A-series models.
 - CLI output is available in Chinese or English; each run uses one language only.
@@ -19,7 +19,7 @@ A Codex skill for generating videos through a user-configured New API-compatible
 Give Codex this prompt:
 
 ```text
-Install the Codex skill from https://github.com/wannds/seedance-agent-skill. Clone the repository, copy its contents into the local skills directory as drama-video-generation, and copy .env.example to .env. If configuration is not supplied, ask me for DRAMA_BASE_URL, DRAMA_API_KEY, and DRAMA_MODEL. Use only Seedance A-series model ids returned by GET /v1/models that do not contain `0826`; all supported models use `/v1/videos`. The user supplies the gateway, model, and API key; do not insert provider defaults. Keep the API key only in .env and never commit it. Run python scripts/drama_video.py --lang en --help to validate the installation and confirm the installed path.
+Install the Codex skill from https://github.com/wannds/seedance-agent-skill. Clone the repository, copy its contents into the local skills directory as drama-video-generation, and copy .env.example to .env. If configuration is not supplied, ask me for DRAMA_BASE_URL, DRAMA_API_KEY, and DRAMA_MODEL. Use only Seedance A-series model ids returned by GET /v1/models; all supported models use `/v1/videos`. The user supplies the gateway, model, and API key; do not insert provider defaults. Keep the API key only in .env and never commit it. Run python scripts/drama_video.py --lang en --help to validate the installation and confirm the installed path.
 ```
 
 The built-in installer helper can also install the repository:
@@ -47,7 +47,7 @@ DRAMA_MODEL=seedance2.5-A
 DRAMA_LANG=en
 ```
 
-Set `DRAMA_BASE_URL` to the gateway origin without `/v1`; all supported A-series models use `/v1/videos`. Model ids containing `0826` are automatically excluded. `.env` is ignored by Git; never commit credentials.
+Set `DRAMA_BASE_URL` to the gateway origin without `/v1`; all supported A-series models use `/v1/videos`. `.env` is ignored by Git; never commit credentials.
 
 ## Language Selection
 

@@ -43,16 +43,16 @@ def load_env():
 
 
 def is_seedance_model(model):
-    """Return True for a Seedance model that is not an excluded -0826 id."""
+    """Return True for a current Seedance A-series model id."""
     normalized = model.strip().lower()
-    return normalized.startswith("seedance") and "0826" not in normalized
+    return normalized.startswith("seedance") and normalized.endswith("-a")
 
 
 def validate_model(model):
     if not is_seedance_model(model):
         raise SystemExit(text(
-            f"Only non-0826 Seedance models are supported: {model}",
-            f"当前 skill 只支持不含 0826 的 Seedance 模型：{model}",
+            f"Only Seedance A-series models are supported: {model}",
+            f"当前 skill 只支持 Seedance A 系列模型：{model}",
         ))
 
 

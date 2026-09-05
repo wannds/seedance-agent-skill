@@ -7,7 +7,7 @@ metadata:
 
 # Seedance Video Generation
 
-Use the bundled zero-dependency CLI for Seedance A-series video generation. It reads `DRAMA_BASE_URL`, `DRAMA_API_KEY`, and `DRAMA_MODEL` from `.env` in the skill directory or the process environment. Non-Seedance and `0826` models are filtered from discovery and rejected before submission.
+Use the bundled zero-dependency CLI for Seedance A-series video generation. It reads `DRAMA_BASE_URL`, `DRAMA_API_KEY`, and `DRAMA_MODEL` from `.env` in the skill directory or the process environment. Non-A-series models are filtered from discovery and rejected before submission.
 
 Set `DRAMA_LANG=en` or `DRAMA_LANG=zh` for the default CLI language. A per-run `--lang en` or `--lang zh` flag overrides the environment setting; each run uses one language only.
 
@@ -28,8 +28,8 @@ The command creates the task, polls until `completed` or `failed`, and downloads
 ## Seedance Model Selection
 
 - A-series models such as `seedance2.5-A`, `seedance2.0-A`, and `seedance2.0-fast-A` use JSON `POST /v1/videos`.
-- Model ids containing `0826` are excluded and are never submitted.
-- The `models` command prints only non-`0826` model ids beginning with `seedance`; use ids returned by `GET /v1/models` for the configured token.
+- Only model ids beginning with `seedance` and ending in `-A` are accepted.
+- The `models` command prints only A-series model ids; use ids returned by `GET /v1/models` for the configured token.
 - Always use the model ids returned by `GET /v1/models` for the configured token. Model availability and pricing are group-specific.
 
 ## Constraints
