@@ -1,4 +1,4 @@
 interface:
   display_name: Video Generation
-  short_description: Generate gateway videos with A-series Seedance models
-  default_prompt: Generate a video with the configured gateway using the user's prompt, duration, resolution, aspect ratio, and references. Use the model ids returned by the configured gateway.
+  short_description: Generate Seedance videos through a New API gateway
+  default_prompt: Generate a Seedance video with the configured gateway using the user's prompt, duration, resolution, aspect ratio, and references. Use only model ids returned by the configured gateway.

@@ -9,9 +9,9 @@
 
 ## 功能
 
-- 支持网关 A 系列 Seedance 2.0/2.5 模型和 Drama Video V2。
+- 仅支持网关的 Seedance 模型，包括 A 系列 Seedance 2.0/2.5 和旧式 `*-0826` 模型。
 - 支持文生视频、参考图片/视频/音频、任务轮询和 MP4 下载。
-- 自动识别 `/v1/videos` 与 `/v1/video/generations` 接口，也可以手动指定。
+- A 系列使用 JSON `/v1/videos`；旧式 `*-0826` 使用 JSON `/v1/video/generations`，也可以手动指定。
 - CLI 输出支持中文和英文，每次运行只显示一种语言。
 
 ## 在 Codex 中安装
@@ -19,7 +19,7 @@
 把下面的提示词发给 Codex：
 
 ```text
-从 https://github.com/wannds/seedance-agent-skill 安装 Codex skill。克隆仓库，将仓库内容复制到本地 skills 目录的 drama-video-generation 文件夹，将 .env.example 复制为 .env；如果未提供配置，询问我 DRAMA_BASE_URL、DRAMA_API_KEY 和 DRAMA_MODEL。网关地址、模型和 API 密钥由用户自行填写，不要写入任何厂商默认值。Seedance 2.0 只允许使用以 -0826 结尾的模型 ID，禁止使用其他 Seedance 2.0 型号。API 密钥只能保存在 .env，绝不要提交。运行 python scripts/drama_video.py --lang zh --help 验证安装，并确认安装路径。
+从 https://github.com/wannds/seedance-agent-skill 安装 Codex skill。克隆仓库，将仓库内容复制到本地 skills 目录的 drama-video-generation 文件夹，将 .env.example 复制为 .env；如果未提供配置，询问我 DRAMA_BASE_URL、DRAMA_API_KEY 和 DRAMA_MODEL。只使用 GET /v1/models 返回的 Seedance 模型 ID；A 系列使用 /v1/videos，旧式 seedance-2.0-0826 与 seedance-2.0-fast-0826 使用 /v1/video/generations。网关地址、模型和 API 密钥由用户自行填写，不要写入任何厂商默认值。API 密钥只能保存在 .env，绝不要提交。运行 python scripts/drama_video.py --lang zh --help 验证安装，并确认安装路径。
 ```
 
 也可以使用 Codex 内置安装脚本：
@@ -48,7 +48,7 @@ DRAMA_ENDPOINT=auto
 DRAMA_LANG=zh
 ```
 
-`DRAMA_BASE_URL` 填网关根地址，不要带 `/v1`；CLI 会根据模型自动选择接口。当前网关的 A 系列模型（如 `seedance2.5-A`、`seedance2.0-A`）使用 `/v1/videos`；旧式 `*-0826` 模型使用 generations 接口。`.env` 已加入 `.gitignore`，不要提交密钥。
+`DRAMA_BASE_URL` 填网关根地址，不要带 `/v1`；CLI 会根据模型自动选择接口。当前网关的 A 系列模型（如 `seedance2.5-A`、`seedance2.0-A`）使用 `/v1/videos`；旧式 `seedance-2.0-0826` 与 `seedance-2.0-fast-0826` 使用 `/v1/video/generations`。`.env` 已加入 `.gitignore`，不要提交密钥。
 
 ## 语言切换
 
@@ -76,7 +76,6 @@ python scripts/drama_video.py --lang zh generate `
   --seconds 4 `
   --resolution 480p `
   --aspect-ratio 16:9 `
-  --generate-audio `
   --out outputs/black-hole.mp4
 ```
 
@@ -93,9 +92,9 @@ python scripts/drama_video.py --lang zh download --task-id TASK_ID --out result.
 
 ## 接口和时长约束
 
-- 当前网关的 `seedance2.0-A`、`seedance2.5-A` 使用 `POST /v1/videos`。
-- 旧式以 `-0826` 结尾的模型才使用 `POST /v1/video/generations`。
-- `seedance2.0-A` 通常支持 4-15 秒；`seedance2.5-A` 通常支持 4-30 秒，分辨率以网关返回为准。
+- 当前网关的 `seedance2.0-A`、`seedance2.0-fast-A`、`seedance2.5-A` 使用 JSON `POST /v1/videos`。
+- `seedance-2.0-0826` 与 `seedance-2.0-fast-0826` 使用 JSON `POST /v1/video/generations`。
+- Seedance 2.0 通常支持 4-15 秒；Seedance 2.5 通常支持 4-30 秒，分辨率以网关返回为准。
 - 如果需要精确 3 秒，先生成供应商允许的最短时长，再使用 FFmpeg 本地裁剪。
 
 ## 参考素材
@@ -106,7 +105,7 @@ python scripts/drama_video.py --lang zh download --task-id TASK_ID --out result.
 --reference "type=image role=reference source=https://example.com/image.jpg"
 ```
 
-并在提示词中用 `@image1`、`@video1` 或 `@audio1` 指代素材，具体别名以网关文档为准。
+并在提示词中用 `@图1`、`@视频1` 或 `@音频1`（或网关接受的英文别名）指代素材。A 系列请求只提交文档列出的公开字段。
 
 ## 许可证
 

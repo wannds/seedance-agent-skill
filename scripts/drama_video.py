@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Zero-dependency CLI for the drama New API video gateway."""
+"""Zero-dependency CLI for Seedance models on a New API video gateway."""
 import argparse
 import json
 import os
@@ -42,29 +42,37 @@ def load_env():
             os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
 
 
-def is_seedance_20(model):
-    """Return True for the legacy *-0826 route, not the A-series /v1/videos route."""
-    normalized = model.strip().lower().replace("-", "")
-    return normalized.startswith("seedance2.0") and not model.strip().lower().endswith("-a")
+def is_seedance_model(model):
+    """Return True when the gateway model id belongs to the Seedance family."""
+    return model.strip().lower().startswith("seedance")
+
+
+def is_legacy_seedance_20(model):
+    """Return True for the documented legacy Seedance 2.0 -0826 route."""
+    normalized = model.strip().lower()
+    return normalized in {"seedance-2.0-0826", "seedance-2.0-fast-0826"}
 
 
 def validate_model(model, endpoint="auto"):
-    if not is_seedance_20(model):
-        return
-    if not model.strip().lower().endswith("-0826"):
+    if not is_seedance_model(model):
         raise SystemExit(text(
-            f"Seedance 2.0 model is disabled unless its id ends with -0826: {model}",
-            f"Seedance 2.0 模型必须使用以 -0826 结尾的 ID，已禁止：{model}",
+            f"Only Seedance models are supported: {model}",
+            f"当前 skill 只支持 Seedance 模型：{model}",
         ))
-    if endpoint == "videos":
+    if is_legacy_seedance_20(model) and endpoint == "videos":
         raise SystemExit(text(
             "Seedance 2.0 *-0826 models require the generations endpoint",
             "Seedance 2.0 的 *-0826 模型必须使用 generations 接口",
         ))
+    if not is_legacy_seedance_20(model) and endpoint == "generations":
+        raise SystemExit(text(
+            "A-series Seedance models require the videos endpoint",
+            "A 系列 Seedance 模型必须使用 videos 接口",
+        ))
 
 
 def model_is_allowed(model):
-    return not is_seedance_20(model) or model.strip().lower().endswith("-0826")
+    return is_seedance_model(model)
 
 
 def config(args):
@@ -78,7 +86,7 @@ def config(args):
     endpoint = args.endpoint or os.environ.get("DRAMA_ENDPOINT", "auto")
     validate_model(model, endpoint)
     if endpoint == "auto":
-        endpoint = "generations" if is_seedance_20(model) else "videos"
+        endpoint = "generations" if is_legacy_seedance_20(model) else "videos"
     if endpoint not in {"videos", "generations"}:
         raise SystemExit(text("DRAMA_ENDPOINT must be auto, videos, or generations", "DRAMA_ENDPOINT 必须是 auto、videos 或 generations"))
     return base, token, model, endpoint
@@ -111,23 +119,40 @@ def check(status, payload):
 
 
 def create_payload(args, model, endpoint):
+    if endpoint == "videos":
+        unsupported = []
+        if args.generate_audio:
+            unsupported.append("--generate-audio")
+        if args.seed is not None:
+            unsupported.append("--seed")
+        if args.negative_prompt:
+            unsupported.append("--negative-prompt")
+        if unsupported:
+            raise SystemExit(text(
+                "A-series Seedance does not support: " + ", ".join(unsupported),
+                "A 系列 Seedance 不支持参数：" + "、".join(unsupported),
+            ))
     payload = {
         "model": model,
         "prompt": args.prompt,
-        "seconds": args.seconds,
+        # The A-series contract accepts integer or string; string also works with
+        # gateways that validate form-compatible values strictly.
+        "seconds": str(args.seconds) if endpoint == "videos" else args.seconds,
         "resolution": args.resolution,
         "aspect_ratio": args.aspect_ratio,
     }
-    if endpoint == "videos":
-        payload["task_mode"] = "references" if args.references else "text"
-    if args.generate_audio:
-        payload["generate_audio"] = True
-    if args.seed is not None:
-        payload["seed"] = args.seed
-    if args.negative_prompt:
-        payload["negative_prompt"] = args.negative_prompt
     if args.references:
         payload["references"] = [parse_reference(value) for value in args.references]
+    # These fields are documented for the legacy -0826 contract. The A-series
+    # endpoint accepts only its public Seedance fields listed above.
+    if endpoint == "generations":
+        payload["task_mode"] = "references" if args.references else "text"
+        if args.generate_audio:
+            payload["generate_audio"] = True
+        if args.seed is not None:
+            payload["seed"] = args.seed
+        if args.negative_prompt:
+            payload["negative_prompt"] = args.negative_prompt
     return payload
 
 
@@ -173,16 +198,10 @@ def poll(args, task_id=None):
 def download(args):
     base, token, model, endpoint = config(args)
     result = poll(args) if args.wait else None
-    if result:
-        direct = result.get("video_url") or (result.get("metadata") or {}).get("url")
-    else:
-        direct = None
-    if direct:
-        url = direct
-        headers = {"Authorization": f"Bearer {token}"}
-    else:
-        url = f"{base}/v1/videos/{urllib.parse.quote(args.task_id)}/content"
-        headers = {"Authorization": f"Bearer {token}"}
+    # New API proxies completed media through this endpoint. Do not depend on
+    # an upstream metadata URL, which may be private or short-lived.
+    url = f"{base}/v1/videos/{urllib.parse.quote(args.task_id)}/content"
+    headers = {"Authorization": f"Bearer {token}"}
     request = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=180) as response, open(args.out, "wb") as output:

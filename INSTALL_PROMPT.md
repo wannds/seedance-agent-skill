@@ -3,7 +3,7 @@
 将下面整段提示词发送给 Codex：
 
 ```text
-从 https://github.com/wannds/seedance-agent-skill 安装 Codex skill。克隆仓库，将仓库内容复制到本地 skills 目录的 drama-video-generation 文件夹，将 .env.example 复制为 .env；如果未提供配置，询问我 DRAMA_BASE_URL、DRAMA_API_KEY 和 DRAMA_MODEL。网关地址、模型和 API 密钥由用户自行填写，不要写入任何厂商默认值。Seedance 2.0 只允许使用以 -0826 结尾的模型 ID，禁止使用其他 Seedance 2.0 型号。API 密钥只能保存在 .env，绝不要提交。运行 python scripts/drama_video.py --lang zh --help 验证安装，并确认安装路径。
+从 https://github.com/wannds/seedance-agent-skill 安装 Codex skill。克隆仓库，将仓库内容复制到本地 skills 目录的 drama-video-generation 文件夹，将 .env.example 复制为 .env；如果未提供配置，询问我 DRAMA_BASE_URL、DRAMA_API_KEY 和 DRAMA_MODEL。只使用 GET /v1/models 返回的 Seedance 模型 ID；A 系列使用 /v1/videos，旧式 seedance-2.0-0826 与 seedance-2.0-fast-0826 使用 /v1/video/generations。网关地址、模型和 API 密钥由用户自行填写，不要写入任何厂商默认值。API 密钥只能保存在 .env，绝不要提交。运行 python scripts/drama_video.py --lang zh --help 验证安装，并确认安装路径。
 ```
 
 中文 CLI 示例：

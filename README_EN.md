@@ -9,9 +9,9 @@ A Codex skill for generating videos through a user-configured New API-compatible
 
 ## Features
 
-- Supports the gateway's A-series Seedance 2.0/2.5 models plus Drama Video V2.
+- Supports Seedance models only, including A-series Seedance 2.0/2.5 and legacy `*-0826` models.
 - Supports text-to-video, image/video/audio references, task polling, and MP4 downloads.
-- Selects `/v1/videos` or `/v1/video/generations` automatically, with a manual override.
+- Sends JSON to `/v1/videos` for A-series models and JSON to `/v1/video/generations` for legacy `*-0826` models, with a manual override.
 - CLI output is available in Chinese or English; each run uses one language only.
 
 ## Install In Codex
@@ -19,7 +19,7 @@ A Codex skill for generating videos through a user-configured New API-compatible
 Give Codex this prompt:
 
 ```text
-Install the Codex skill from https://github.com/wannds/seedance-agent-skill. Clone the repository, copy its contents into the local skills directory as drama-video-generation, and copy .env.example to .env. If configuration is not supplied, ask me for DRAMA_BASE_URL, DRAMA_API_KEY, and DRAMA_MODEL. The user supplies the gateway, model, and API key; do not insert provider defaults. Seedance 2.0 permits only model ids ending in -0826; reject every other Seedance 2.0 model. Keep the API key only in .env and never commit it. Run python scripts/drama_video.py --lang en --help to validate the installation and confirm the installed path.
+Install the Codex skill from https://github.com/wannds/seedance-agent-skill. Clone the repository, copy its contents into the local skills directory as drama-video-generation, and copy .env.example to .env. If configuration is not supplied, ask me for DRAMA_BASE_URL, DRAMA_API_KEY, and DRAMA_MODEL. Use only Seedance model ids returned by GET /v1/models; A-series models use /v1/videos, while seedance-2.0-0826 and seedance-2.0-fast-0826 use /v1/video/generations. The user supplies the gateway, model, and API key; do not insert provider defaults. Keep the API key only in .env and never commit it. Run python scripts/drama_video.py --lang en --help to validate the installation and confirm the installed path.
 ```
 
 The built-in installer helper can also install the repository:
@@ -48,7 +48,7 @@ DRAMA_ENDPOINT=auto
 DRAMA_LANG=en
 ```
 
-Set `DRAMA_BASE_URL` to the gateway origin without `/v1`; the CLI selects the route from the model. This gateway's A-series models such as `seedance2.0-A` and `seedance2.5-A` use `/v1/videos`; legacy `*-0826` models use the generations endpoint. `.env` is ignored by Git; never commit credentials.
+Set `DRAMA_BASE_URL` to the gateway origin without `/v1`; the CLI selects the route from the model. This gateway's A-series models such as `seedance2.0-A` and `seedance2.5-A` use `/v1/videos`; legacy `seedance-2.0-0826` and `seedance-2.0-fast-0826` use the generations endpoint. `.env` is ignored by Git; never commit credentials.
 
 ## Language Selection
 
@@ -76,7 +76,6 @@ python scripts/drama_video.py --lang en generate `
   --seconds 4 `
   --resolution 480p `
   --aspect-ratio 16:9 `
-  --generate-audio `
   --out outputs/black-hole.mp4
 ```
 
@@ -93,9 +92,9 @@ python scripts/drama_video.py --lang en download --task-id TASK_ID --out result.
 
 ## Endpoints And Duration Constraints
 
-- This gateway's `seedance2.0-A` and `seedance2.5-A` models use `POST /v1/videos`.
-- Legacy `*-0826` models use `POST /v1/video/generations`.
-- `seedance2.0-A` usually accepts 4-15 seconds; `seedance2.5-A` usually accepts 4-30 seconds, with resolutions determined by the gateway.
+- This gateway's `seedance2.0-A`, `seedance2.0-fast-A`, and `seedance2.5-A` models use JSON `POST /v1/videos`.
+- Legacy `seedance-2.0-0826` and `seedance-2.0-fast-0826` use JSON `POST /v1/video/generations`.
+- Seedance 2.0 usually accepts 4-15 seconds; Seedance 2.5 usually accepts 4-30 seconds, with resolutions determined by the gateway.
 - For an exact 3-second file, generate the provider minimum first, then trim locally with FFmpeg.
 
 ## Reference Media
@@ -106,7 +105,7 @@ For public HTTPS media, pass `--reference` more than once as needed:
 --reference "type=image role=reference source=https://example.com/image.jpg"
 ```
 
-Mention the asset in the prompt as `@image1`, `@video1`, or `@audio1`; follow the gateway documentation for localized aliases.
+Mention the asset in the prompt as `@图1`, `@视频1`, or `@音频1` (or an English alias accepted by the gateway); follow the gateway documentation. A-series requests send only the documented public fields.
 
 ## License
 
