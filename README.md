@@ -9,7 +9,7 @@
 
 ## 功能
 
-- Seedance 2.0 仅支持以 `-0826` 结尾的模型，同时支持 Seedance 2.5 和 Drama Video V2。
+- 支持网关 A 系列 Seedance 2.0/2.5 模型和 Drama Video V2。
 - 支持文生视频、参考图片/视频/音频、任务轮询和 MP4 下载。
 - 自动识别 `/v1/videos` 与 `/v1/video/generations` 接口，也可以手动指定。
 - CLI 输出支持中文和英文，每次运行只显示一种语言。
@@ -43,12 +43,12 @@ Copy-Item .env.example .env
 ```env
 DRAMA_BASE_URL=你的网关根地址
 DRAMA_API_KEY=你的API密钥
-DRAMA_MODEL=seedance-2.0-fast-0826
+DRAMA_MODEL=seedance2.5-A
 DRAMA_ENDPOINT=auto
 DRAMA_LANG=zh
 ```
 
-`DRAMA_BASE_URL` 填网关根地址，不要带 `/v1`；CLI 会根据模型自动选择接口。Seedance 2.0 仅允许 `seedance-2.0-0826` 和 `seedance-2.0-fast-0826` 这类以 `-0826` 结尾的模型，并强制使用 generations 接口；Seedance 2.5 等其他支持的模型使用 videos 接口。`.env` 已加入 `.gitignore`，不要提交密钥。
+`DRAMA_BASE_URL` 填网关根地址，不要带 `/v1`；CLI 会根据模型自动选择接口。当前网关的 A 系列模型（如 `seedance2.5-A`、`seedance2.0-A`）使用 `/v1/videos`；旧式 `*-0826` 模型使用 generations 接口。`.env` 已加入 `.gitignore`，不要提交密钥。
 
 ## 语言切换
 
@@ -72,7 +72,7 @@ DRAMA_LANG=zh
 ```powershell
 python scripts/drama_video.py --lang zh generate `
   --prompt "电影级科幻风格的黑洞，发光吸积盘，镜头缓慢推进" `
-  --model seedance-2.0-fast-0826 `
+  --model seedance2.5-A `
   --seconds 4 `
   --resolution 480p `
   --aspect-ratio 16:9 `
@@ -93,10 +93,9 @@ python scripts/drama_video.py --lang zh download --task-id TASK_ID --out result.
 
 ## 接口和时长约束
 
-- Seedance 2.0 只允许 `seedance-2.0-0826` 和 `seedance-2.0-fast-0826` 等以 `-0826` 结尾的 ID，并使用 `POST /v1/video/generations`。
-- `seedance-2.0`、`seedance-2.0-fast` 及其他不带 `-0826` 后缀的 Seedance 2.0 型号会被 CLI 拒绝，`models` 命令也不会显示它们。
-- Seedance 2.5、Drama Video V2 等其他支持的模型使用 `POST /v1/videos`。
-- Seedance 2.0 `*-0826` 通常支持 4-15 秒，fast 版本最高 720p；Seedance 2.5 通常支持 4-30 秒，分辨率以网关返回为准。
+- 当前网关的 `seedance2.0-A`、`seedance2.5-A` 使用 `POST /v1/videos`。
+- 旧式以 `-0826` 结尾的模型才使用 `POST /v1/video/generations`。
+- `seedance2.0-A` 通常支持 4-15 秒；`seedance2.5-A` 通常支持 4-30 秒，分辨率以网关返回为准。
 - 如果需要精确 3 秒，先生成供应商允许的最短时长，再使用 FFmpeg 本地裁剪。
 
 ## 参考素材

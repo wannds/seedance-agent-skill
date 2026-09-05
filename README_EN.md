@@ -9,7 +9,7 @@ A Codex skill for generating videos through a user-configured New API-compatible
 
 ## Features
 
-- Supports Seedance 2.0 only with `-0826` model ids, plus Seedance 2.5 and Drama Video V2.
+- Supports the gateway's A-series Seedance 2.0/2.5 models plus Drama Video V2.
 - Supports text-to-video, image/video/audio references, task polling, and MP4 downloads.
 - Selects `/v1/videos` or `/v1/video/generations` automatically, with a manual override.
 - CLI output is available in Chinese or English; each run uses one language only.
@@ -43,12 +43,12 @@ Then edit `.env`:
 ```env
 DRAMA_BASE_URL=YOUR_GATEWAY_ORIGIN
 DRAMA_API_KEY=YOUR_API_KEY
-DRAMA_MODEL=seedance-2.0-fast-0826
+DRAMA_MODEL=seedance2.5-A
 DRAMA_ENDPOINT=auto
 DRAMA_LANG=en
 ```
 
-Set `DRAMA_BASE_URL` to the gateway origin without `/v1`; the CLI selects the route from the model. Seedance 2.0 permits only ids such as `seedance-2.0-0826` and `seedance-2.0-fast-0826` that end in `-0826`, and always uses the generations endpoint. Other supported families such as Seedance 2.5 use the videos endpoint. `.env` is ignored by Git; never commit credentials.
+Set `DRAMA_BASE_URL` to the gateway origin without `/v1`; the CLI selects the route from the model. This gateway's A-series models such as `seedance2.0-A` and `seedance2.5-A` use `/v1/videos`; legacy `*-0826` models use the generations endpoint. `.env` is ignored by Git; never commit credentials.
 
 ## Language Selection
 
@@ -72,7 +72,7 @@ The command-line `--lang en` or `--lang zh` flag overrides the `.env` default.
 ```powershell
 python scripts/drama_video.py --lang en generate `
   --prompt "A cinematic black hole with a glowing accretion disk, slow camera push-in" `
-  --model seedance-2.0-fast-0826 `
+  --model seedance2.5-A `
   --seconds 4 `
   --resolution 480p `
   --aspect-ratio 16:9 `
@@ -93,10 +93,9 @@ python scripts/drama_video.py --lang en download --task-id TASK_ID --out result.
 
 ## Endpoints And Duration Constraints
 
-- Seedance 2.0 permits only ids such as `seedance-2.0-0826` and `seedance-2.0-fast-0826` that end in `-0826`; they use `POST /v1/video/generations`.
-- The CLI rejects `seedance-2.0`, `seedance-2.0-fast`, and any other Seedance 2.0 id without the `-0826` suffix. The `models` command hides them as well.
-- Other supported families such as Seedance 2.5 and Drama Video V2 use `POST /v1/videos`.
-- Seedance 2.0 `*-0826` models usually accept 4-15 seconds; fast variants support up to 720p. Seedance 2.5 usually accepts 4-30 seconds, with resolutions determined by the gateway.
+- This gateway's `seedance2.0-A` and `seedance2.5-A` models use `POST /v1/videos`.
+- Legacy `*-0826` models use `POST /v1/video/generations`.
+- `seedance2.0-A` usually accepts 4-15 seconds; `seedance2.5-A` usually accepts 4-30 seconds, with resolutions determined by the gateway.
 - For an exact 3-second file, generate the provider minimum first, then trim locally with FFmpeg.
 
 ## Reference Media
