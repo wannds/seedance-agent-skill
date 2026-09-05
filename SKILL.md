@@ -1,6 +1,6 @@
 ---
 name: drama-video-generation
-description: Generate videos through a user-configured New API gateway. Supports Seedance 2.0 only with -0826 model ids, plus Seedance 2.5, Drama Video V2, references, polling, and MP4 download.
+description: Generate videos through a user-configured New API gateway. Supports A-series Seedance models on /v1/videos, legacy -0826 models on /v1/video/generations, references, polling, and MP4 download.
 metadata:
   short-description: New API video generation
 ---
@@ -16,7 +16,7 @@ Set `DRAMA_LANG=en` or `DRAMA_LANG=zh` for the default CLI language. A per-run `
 ```powershell
 python scripts/drama_video.py generate `
   --prompt "A cinematic black hole with a glowing accretion disk, slow camera push-in" `
-  --model seedance-2.0-fast-0826 `
+  --model seedance2.5-A `
   --seconds 4 `
   --resolution 480p `
   --aspect-ratio 16:9 `
@@ -28,10 +28,9 @@ The command creates the task, polls until `completed` or `failed`, and downloads
 
 ## Model Routing
 
-- Seedance 2.0 is restricted to model ids ending in `-0826`. Use `seedance-2.0-0826` or `seedance-2.0-fast-0826`.
-- Never use `seedance-2.0`, `seedance-2.0-fast`, or any other Seedance 2.0 id without the `-0826` suffix. The CLI rejects them.
-- Allowed Seedance 2.0 models use `POST /v1/video/generations`, with polling at `/v1/video/generations/{task_id}`. They cannot be forced onto the videos endpoint.
-- Seedance 2.5, Drama Video V2, and other supported non-2.0 families use `POST /v1/videos` when `DRAMA_ENDPOINT=auto`.
+- A-series models such as `seedance2.5-A` and `seedance2.0-A` use `POST /v1/videos` with JSON, as documented by the upstream Drama API.
+- Legacy non-A Seedance 2.0 ids use `POST /v1/video/generations` and must end in `-0826`.
+- Seedance 2.5, Drama Video V2, and other supported families use `POST /v1/videos` when `DRAMA_ENDPOINT=auto`.
 - The `models` command hides disallowed Seedance 2.0 ids returned by the gateway.
 - Always use the model ids returned by `GET /v1/models` for the configured token. Model availability and pricing are group-specific.
 

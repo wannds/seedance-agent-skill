@@ -12,7 +12,7 @@ import urllib.request
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LANG = "en"
-DEFAULT_MODEL = "seedance-2.0-fast-0826"
+DEFAULT_MODEL = "seedance2.5-A"
 
 
 def text(en, zh):
@@ -43,8 +43,9 @@ def load_env():
 
 
 def is_seedance_20(model):
+    """Return True for the legacy *-0826 route, not the A-series /v1/videos route."""
     normalized = model.strip().lower().replace("-", "")
-    return normalized.startswith("seedance2.0")
+    return normalized.startswith("seedance2.0") and not model.strip().lower().endswith("-a")
 
 
 def validate_model(model, endpoint="auto"):
@@ -118,7 +119,7 @@ def create_payload(args, model, endpoint):
         "aspect_ratio": args.aspect_ratio,
     }
     if endpoint == "videos":
-        payload["duration"] = args.seconds
+        payload["task_mode"] = "references" if args.references else "text"
     if args.generate_audio:
         payload["generate_audio"] = True
     if args.seed is not None:

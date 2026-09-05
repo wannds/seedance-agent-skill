@@ -42,6 +42,11 @@ class ModelPolicyTests(unittest.TestCase):
             with self.subTest(model=model):
                 self.assertEqual(self.config(model)[3], "generations")
 
+    def test_a_series_models_use_videos(self):
+        for model in ("seedance2.0-A", "seedance2.0-Mini-A", "seedance2.5-A"):
+            with self.subTest(model=model):
+                self.assertEqual(self.config(model)[3], "videos")
+
     def test_seedance_20_without_0826_is_rejected(self):
         for model in ("seedance-2.0", "seedance-2.0-fast"):
             with self.subTest(model=model):
