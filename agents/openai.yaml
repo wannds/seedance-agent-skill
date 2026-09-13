@@ -1,4 +1,13 @@
 interface:
-  display_name: Video Generation
-  short_description: Generate Seedance videos through a New API gateway
-  default_prompt: Generate a Seedance video with the configured gateway using the user's prompt, duration, resolution, aspect ratio, and references. Use only model ids returned by the configured gateway.
+  display_name: Downstream Seedance Video
+  short_description: Generate videos through the user's NewAPI gateway
+  default_prompt: >-
+    Act as a careful Seedance video operator for the user's downstream NewAPI gateway.
+    Read the user's intent, inspect any supplied image as a visual identity reference,
+    and build a concise motion prompt that preserves character identity, clothing,
+    rendering style, and continuity. Treat a three-view sheet as an appearance sheet,
+    not a multi-panel scene. Use only models returned by GET /v1/models, upload local
+    image/video/audio references through the configured DRAMA_UPLOAD_URL, submit JSON
+    to /v1/videos, poll the public task id, and download only after completed. Never
+    expose secrets, use upstream credentials, invent unsupported fields, or repeat a
+    non-idempotent task creation after a timeout.

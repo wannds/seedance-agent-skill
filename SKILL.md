@@ -1,52 +1,101 @@
 ---
 name: drama-video-generation
-description: Generate videos through a user-configured New API gateway using Seedance A-series models only. Supports the documented JSON /v1/videos contract, references, polling, and MP4 download.
+description: Generate Seedance A-series videos through a user-configured downstream NewAPI gateway. Supports text prompts, local image/video/audio upload, visual-reference prompt construction, task polling, and MP4 download.
 metadata:
-  short-description: New API video generation
+  short-description: Downstream Seedance video gateway
 ---
 
-# Seedance Video Generation
+# Downstream Seedance Video
 
-Use the bundled zero-dependency CLI for Seedance A-series video generation. It reads `DRAMA_BASE_URL`, `DRAMA_API_KEY`, and `DRAMA_MODEL` from `.env` in the skill directory or the process environment. Non-A-series models are filtered from discovery and rejected before submission.
+Use this skill as a client of a user's NewAPI-compatible downstream gateway. The gateway is the only API endpoint the user needs to expose to the agent. Never assume a provider URL, API key, model, upload token, or storage URL.
 
-Set `DRAMA_LANG=en` or `DRAMA_LANG=zh` for the default CLI language. A per-run `--lang en` or `--lang zh` flag overrides the environment setting; each run uses one language only.
+## Configuration
 
-## Quick Start
+Read these values from `.env` in the skill directory or process environment:
 
-```powershell
-python scripts/drama_video.py generate `
-  --prompt "A cinematic black hole with a glowing accretion disk, slow camera push-in" `
-  --model seedance2.5-A `
-  --seconds 4 `
-  --resolution 480p `
-  --aspect-ratio 16:9 `
-  --out outputs/black-hole.mp4
+```env
+DRAMA_BASE_URL=https://your-newapi.example.com
+DRAMA_API_KEY=your-newapi-user-token
+DRAMA_MODEL=seedance2.5-A
+DRAMA_UPLOAD_URL=https://your-media.example.com/v1/media/upload
+DRAMA_UPLOAD_KEY=your-media-upload-token
+DRAMA_LANG=zh
 ```
 
-The command creates the task, polls until `completed` or `failed`, and downloads the MP4. Save the returned task id when using the separate subcommands.
+`DRAMA_BASE_URL` must be the gateway origin without `/v1`. `DRAMA_UPLOAD_URL` is required only when local reference files are used. Keep both secrets local and never print or commit them.
 
-## Seedance Model Selection
+Before creating a task, call `GET /v1/models` and select only a returned model whose id starts with `seedance` and ends with `-A`. Respect the user's configured model if it is present in the returned list; otherwise explain the mismatch and ask for a valid model.
 
-- A-series models such as `seedance2.5-A`, `seedance2.0-A`, and `seedance2.0-fast-A` use JSON `POST /v1/videos`.
-- Only model ids beginning with `seedance` and ending in `-A` are accepted.
-- The `models` command prints only A-series model ids; use ids returned by `GET /v1/models` for the configured token.
-- Always use the model ids returned by `GET /v1/models` for the configured token. Model availability and pricing are group-specific.
+## User Intent And Prompt Construction
 
-## Constraints
+When the user provides an image, first inspect it as a visual reference. Treat a character turnaround or three-view sheet as an identity sheet, not as a scene to reproduce literally.
 
-- Seedance 2.0: 4-15 seconds; 480p, 720p, 1080p, or 4K where the model permits.
-- Seedance 2.5: 4-30 seconds; 480p, 720p, or 1080p.
-- A-series references use `--reference type=... role=... source=...` with public HTTPS URLs or Data URIs. Mention each reference in the prompt using the documented `@图N`/`@视频N`/`@音频N` aliases (or the gateway's accepted localized aliases).
-- For A-series requests, the CLI sends only the documented public fields: `model`, `prompt`, `seconds`, `resolution`, `aspect_ratio`, and `references`.
-- Do not use a 3-second request. Generate the provider minimum (usually 4 seconds) and trim locally with FFmpeg if an exact 3-second output is required.
+Construct a concise video prompt with these parts, in order:
 
-## Separate Operations
+1. **Subject lock:** preserve the referenced character's face, hairstyle, clothing, colors, accessories, proportions, and rendering style.
+2. **Action:** describe one physically coherent action with a clear start, middle, and end.
+3. **Camera:** state framing and camera motion only when useful; default to a stable medium shot.
+4. **Motion details:** describe natural hair, fabric, and accessory movement without inventing extra characters.
+5. **Continuity constraints:** request stable identity, hands, face, clothing, lighting, and background; forbid text, watermark, duplicate limbs, and unintended subjects.
+
+For a three-view sheet, do not ask the model to animate all three panels. Say that the sheet is the sole appearance reference and request one consistent character in the generated shot.
+
+Prefer safe, concrete actions such as turning around, waving, walking, looking toward camera, or a short game-style idle animation. Do not add romantic or sexual behavior unless the user explicitly requests it and the request is allowed by the provider. If the provider rejects a prompt or reference, do not retry unchanged; explain the rejection and suggest a less ambiguous action or reference.
+
+## References
+
+For an existing HTTPS reference, pass:
+
+```text
+--reference "type=image role=reference source=https://example.com/reference.png"
+```
+
+For a local file, configure `DRAMA_UPLOAD_URL` and `DRAMA_UPLOAD_KEY`, then pass:
+
+```text
+--reference-file "type=image path=reference.png"
+--reference-file "type=video path=motion.mp4"
+--reference-file "type=audio path=voice.mp3"
+```
+
+The CLI uploads the file first and uses the returned HTTPS URL in `references`. Every reference should be mentioned in the prompt with the gateway's accepted aliases, for example `@图1`, `@视频1`, or `@音频1`.
+
+Do not send local paths, raw Base64, or Data URIs unless the configured gateway explicitly supports them. The downstream upload service may accept larger files than a specific model can use; the model's own limits still apply at task creation.
+
+## API Workflow
+
+1. Discover models with `GET /v1/models`.
+2. Upload local references, if any, with `DRAMA_UPLOAD_URL`.
+3. Create a task with JSON `POST /v1/videos`.
+4. Save the public `id` from the response.
+5. Poll `GET /v1/videos/{id}` every 3–5 seconds.
+6. Download only after `status` is `completed` using `GET /v1/videos/{id}/content`.
+
+Never use an upstream vendor URL, upstream key, internal task id, or metadata URL. Do not repeat `POST /v1/videos` after a timeout until the task state has been checked, because creation is not idempotent.
+
+## Supported Public Fields
+
+Send only the documented fields:
+
+```json
+{
+  "model": "seedance2.5-A",
+  "prompt": "...",
+  "seconds": 4,
+  "resolution": "480p",
+  "aspect_ratio": "16:9",
+  "references": []
+}
+```
+
+Use 4–15 seconds for Seedance 2.0 and 4–30 seconds for Seedance 2.5, subject to the model list and gateway validation. Do not invent unsupported fields or silently downgrade a user's requested resolution.
+
+## CLI
 
 ```powershell
 python scripts/drama_video.py models
-python scripts/drama_video.py create --prompt "..." --seconds 4 --resolution 720p
-python scripts/drama_video.py wait --task-id TASK_ID --interval 4
-python scripts/drama_video.py download --task-id TASK_ID --out result.mp4
+python scripts/drama_video.py generate --prompt "角色原地转一圈" --seconds 4 --resolution 480p --out output.mp4
+python scripts/drama_video.py generate --prompt "参考@图1中的角色原地转一圈" --reference-file "type=image path=reference.png" --seconds 4 --resolution 480p --out output.mp4
 ```
 
-The download command always requests `/v1/videos/{task_id}/content` with the Bearer token after the task is completed. This keeps downloads on the New API proxy instead of depending on an upstream URL.
+The CLI is zero-dependency and uses only the Python standard library.
