@@ -45,6 +45,8 @@ DRAMA_BASE_URL=你的网关根地址
 DRAMA_API_KEY=你的API密钥
 DRAMA_MODEL=seedance2.5-A
 DRAMA_LANG=zh
+DRAMA_UPLOAD_URL=https://media.rcolaapi.top/v1/media/upload
+DRAMA_UPLOAD_KEY=你的素材上传令牌
 ```
 
 `DRAMA_BASE_URL` 填网关根地址，不要带 `/v1`；A 系列 Seedance 模型统一使用 `/v1/videos`。`.env` 已加入 `.gitignore`，不要提交密钥。
@@ -102,6 +104,17 @@ python scripts/drama_video.py --lang zh download --task-id TASK_ID --out result.
 ```text
 --reference "type=image role=reference source=https://example.com/image.jpg"
 ```
+
+本地素材可通过上传接口自动转换为公网 URL：
+
+```powershell
+python scripts/drama_video.py generate `
+  --prompt "参考素材中的人物转一圈" `
+  --reference-file "type=image path=reference.png" `
+  --seconds 4 --resolution 480p --out output.mp4
+```
+
+使用本地素材前配置 `DRAMA_UPLOAD_URL` 和 `DRAMA_UPLOAD_KEY`。上传令牌只保存在本地 `.env`，不要提交到 Git。
 
 并在提示词中用 `@图1`、`@视频1` 或 `@音频1`（或网关接受的英文别名）指代素材。A 系列请求只提交文档列出的公开字段。
 

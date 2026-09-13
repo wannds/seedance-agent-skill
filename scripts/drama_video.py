@@ -72,6 +72,47 @@ def config(args):
     return base, token, model
 
 
+def upload_file(path, upload_url, upload_token):
+    """Upload a local reference and return the gateway's public URL."""
+    if not upload_url or not upload_token:
+        raise SystemExit(text(
+            "Local references require DRAMA_UPLOAD_URL and DRAMA_UPLOAD_KEY",
+            "本地素材需要配置 DRAMA_UPLOAD_URL 和 DRAMA_UPLOAD_KEY",
+        ))
+    import mimetypes, uuid
+    content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
+    data = open(path, "rb").read()
+    boundary = "----seedance" + uuid.uuid4().hex
+    body = (f"--{boundary}\\r\\nContent-Disposition: form-data; name=\\\"file\\\"; "
+            f"filename=\\\"{os.path.basename(path)}\\\"\\r\\nContent-Type: {content_type}\\r\\n\\r\\n").encode() + data + f"\\r\\n--{boundary}--\\r\\n".encode()
+    request = urllib.request.Request(upload_url, data=body, method="POST", headers={
+        "Authorization": f"Bearer {upload_token}",
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+    })
+    try:
+        with urllib.request.urlopen(request, timeout=180) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        raise SystemExit(f"upload failed HTTP {exc.code}: {exc.read().decode('utf-8', 'replace')}") from exc
+    if not result.get("url"):
+        raise SystemExit(f"upload response has no url: {result}")
+    return result["url"]
+
+
+def prepare_references(args):
+    upload_url = os.environ.get("DRAMA_UPLOAD_URL")
+    upload_token = os.environ.get("DRAMA_UPLOAD_KEY")
+    values = list(args.references or [])
+    for item in getattr(args, "reference_files", []) or []:
+        fields = dict(part.split("=", 1) for part in item.split(" ") if "=" in part)
+        for required in ("type", "path"):
+            if not fields.get(required):
+                raise SystemExit(f"reference-file needs type= and path=: {item}")
+        source = upload_file(fields["path"], upload_url, upload_token)
+        values.append(f"type={fields['type']} role=reference source={source}")
+    return values
+
+
 def request_json(method, url, token, payload=None, timeout=60):
     data = json.dumps(payload, ensure_ascii=False).encode() if payload is not None else None
     request = urllib.request.Request(url, data=data, method=method)
@@ -121,6 +162,7 @@ def parse_reference(value):
 
 def create(args):
     base, token, model = config(args)
+    args.references = prepare_references(args)
     status, payload = request_json("POST", base + "/v1/videos", token, create_payload(args, model))
     check(status, payload)
     task_id = payload.get("id") or payload.get("task_id")
@@ -196,6 +238,7 @@ def build_parser():
     common.add_argument("--resolution", default="480p", help=text("resolution", "分辨率"))
     common.add_argument("--aspect-ratio", default="16:9", help=text("aspect ratio", "画面比例"))
     common.add_argument("--reference", dest="references", action="append", help=text("type=image role=reference source=https://...", "type=image role=reference source=https://..."))
+    common.add_argument("--reference-file", dest="reference_files", action="append", help=text("type=image path=local/file.png", "type=image path=本地文件.png"))
 
     create_parser = sub.add_parser("create", parents=[common], help=text("create a task", "创建任务"))
     create_parser.set_defaults(func=create)
