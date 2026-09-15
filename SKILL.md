@@ -17,12 +17,14 @@ Read these values from `.env` in the skill directory or process environment:
 DRAMA_BASE_URL=https://your-newapi.example.com
 DRAMA_API_KEY=your-newapi-user-token
 DRAMA_MODEL=seedance2.5-A
-DRAMA_UPLOAD_URL=https://your-media.example.com/v1/media/upload
+# Optional. If omitted, the skill uses DRAMA_BASE_URL/v1/media/upload
+# with DRAMA_API_KEY.
+DRAMA_UPLOAD_URL=https://your-newapi.example.com/v1/media/upload
 DRAMA_UPLOAD_KEY=your-media-upload-token
 DRAMA_LANG=zh
 ```
 
-`DRAMA_BASE_URL` must be the gateway origin without `/v1`. `DRAMA_UPLOAD_URL` is required only when local reference files are used. Keep both secrets local and never print or commit them.
+`DRAMA_BASE_URL` must be the gateway origin without `/v1`. For local files, the skill uploads over HTTPS to `DRAMA_UPLOAD_URL`; when it is omitted, it derives `${DRAMA_BASE_URL}/v1/media/upload` and reuses `DRAMA_API_KEY`. The gateway must expose that multipart endpoint and return `{ "url": "https://..." }`. Keep secrets local and never print or commit them.
 
 Before creating a task, call `GET /v1/models` and select only a returned model whose id starts with `seedance` and ends with `-A`. Respect the user's configured model if it is present in the returned list; otherwise explain the mismatch and ask for a valid model.
 

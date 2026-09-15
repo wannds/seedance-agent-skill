@@ -83,8 +83,8 @@ def upload_file(path, upload_url, upload_token):
     content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
     data = open(path, "rb").read()
     boundary = "----seedance" + uuid.uuid4().hex
-    body = (f"--{boundary}\\r\\nContent-Disposition: form-data; name=\\\"file\\\"; "
-            f"filename=\\\"{os.path.basename(path)}\\\"\\r\\nContent-Type: {content_type}\\r\\n\\r\\n").encode() + data + f"\\r\\n--{boundary}--\\r\\n".encode()
+    body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; "
+            f"filename=\"{os.path.basename(path)}\"\r\nContent-Type: {content_type}\r\n\r\n").encode() + data + f"\r\n--{boundary}--\r\n".encode()
     request = urllib.request.Request(upload_url, data=body, method="POST", headers={
         "Authorization": f"Bearer {upload_token}",
         "Content-Type": f"multipart/form-data; boundary={boundary}",
@@ -100,8 +100,15 @@ def upload_file(path, upload_url, upload_token):
 
 
 def prepare_references(args):
+    # Prefer a separately configured media endpoint; otherwise use the same
+    # gateway origin and API key so local references follow the normal HTTPS
+    # gateway path without requiring a second credential.
     upload_url = os.environ.get("DRAMA_UPLOAD_URL")
-    upload_token = os.environ.get("DRAMA_UPLOAD_KEY")
+    upload_token = os.environ.get("DRAMA_UPLOAD_KEY") or os.environ.get("DRAMA_API_KEY")
+    if not upload_url:
+        base = (os.environ.get("DRAMA_BASE_URL") or "").rstrip("/")
+        if base:
+            upload_url = base + "/v1/media/upload"
     values = list(args.references or [])
     for item in getattr(args, "reference_files", []) or []:
         fields = dict(part.split("=", 1) for part in item.split(" ") if "=" in part)
